@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 )
@@ -20,9 +21,9 @@ type Monster struct {
 	cloak Cloak
 }
 
-func NewMonster() *Monster {
+func NewMonster(transformationTime time.Duration) *Monster {
 	m := Monster{}
-	time.Sleep(minute)
+	time.Sleep(transformationTime)
 	m.shrinkBody()
 	m.expandHead()
 	m.goggle()
@@ -61,16 +62,28 @@ type Nut struct {
 	unshelled bool
 }
 
-// Люди
-
-type People interface {
-	Rejoice()
+type King struct {
+	xPosition int
 }
 
-type King struct {
+func (k *King) rejoice() string {
+	return k.jumpOnOneLeg()
+}
+
+func (k *King) jumpOnOneLeg() string {
+	return "jump-jump!"
 }
 
 type Queen struct {
+	xPosition int
+}
+
+func (q *Queen) rejoice() string {
+	return q.faint()
+}
+
+func (q *Queen) faint() string {
+	return "thud!"
 }
 
 type Princess struct {
@@ -81,6 +94,7 @@ type Princess struct {
 	hair      string
 	hasNut    bool
 	monster   *Monster
+	xPosition int
 }
 
 func (p *Princess) eatNutKernel() {
@@ -89,13 +103,22 @@ func (p *Princess) eatNutKernel() {
 }
 
 type Courtiers struct {
-	trumpet string
-	oboe    string
+	trumpet   string
+	oboe      string
+	xPosition int
 }
 
-func (c *Courtiers) Rejoice() {
-	c.trumpet = strings.ToUpper("Tarantara! tarantara!")
-	c.oboe = strings.ToUpper("Ra, ra, ra, ra!")
+func (c *Courtiers) rejoice(isLoud bool) {
+	var (
+		trumpetSound = "Tarantara! tarantara!"
+		oboeSound    = "Ra, ra, ra, ra!"
+	)
+	if isLoud == true {
+		trumpetSound = strings.ToUpper(trumpetSound)
+		oboeSound = strings.ToUpper(oboeSound)
+	}
+	c.trumpet = trumpetSound
+	c.oboe = oboeSound
 }
 
 type RoyalServants struct {
@@ -108,28 +131,30 @@ type Folk struct {
 }
 
 func (f *Folk) NewFolk() {
-	commonPerson := CommonPerson{}
+	commonPerson := CommonPerson{xPosition: 14}
 	for i := 0; i < crowdSize; i++ {
 		f.CommonPeople = append(f.CommonPeople, commonPerson)
 	}
 }
 
 type CommonPerson struct {
+	xPosition int
 }
 
-func (cp *CommonPerson) Rejoice() string {
-	return "Hooray!"
+func (cp *CommonPerson) rejoice() string {
+	return fmt.Sprintf("Hooray! ")
 }
 
 type Drosselmeier struct {
 	age          string
 	bodyPosition string
 	eyes         string
-	stepsCount   int
+	xPosition    int
 	hasNut       bool
+	monster      *Monster
 }
 
-func (d *Drosselmeier) crackNut(n Nut) string {
+func (d *Drosselmeier) crackNut(n *Nut) string {
 	n.unshelled = true
 	return "crack!"
 }
@@ -150,36 +175,51 @@ func (d *Drosselmeier) closeEyes() {
 	d.eyes = "closed"
 }
 
-func (d *Drosselmeier) backAway(steps int) {
-	d.stepsCount += steps
+func (d *Drosselmeier) backAway(steps int) string {
+	d.xPosition += steps
+	return "click!"
 }
 
-func (d *Drosselmeier) takeNut(m MasterOfCeremonies) {
+func (d *Drosselmeier) takeNut(m *MasterOfCeremonies) {
 	m.hasNut = false
 	d.hasNut = true
 }
 
-func (d *Drosselmeier) giveNut(p Princess) {
+func (d *Drosselmeier) giveNut(p *Princess) {
 	d.hasNut = false
 	p.hasNut = true
 }
 
+func (d *Drosselmeier) stepOnRat(r *Rat) {
+	r.isHurting = true
+}
+
 type MasterOfCeremonies struct {
-	hasNut bool
+	hasNut    bool
+	xPosition int
 }
 
 type Rat struct {
-	hair string
+	hair          string
+	xPosition     int
+	isUnderground bool
+	isHurting     bool
 }
 
-func (r *Rat) whistle() {
-}
-
-func (r *Rat) hiss() {
-
+func (r *Rat) whistleAndHiss(isLoud bool) (string, string) {
+	var (
+		whistle = "phheeew!"
+		hiss    = "hissss!"
+	)
+	if isLoud == true {
+		whistle = strings.ToUpper(whistle)
+		hiss = strings.ToUpper(hiss)
+	}
+	return whistle, hiss
 }
 
 func main() {
+	// объявление действующих лиц и предметов
 	nut := Nut{
 		name: "Krakatuk",
 	}
@@ -187,9 +227,12 @@ func main() {
 		age:          "young",
 		bodyPosition: "stand up",
 		eyes:         "open",
+		xPosition:    0,
+		hasNut:       false,
 	}
 	masterOfCeremonies := MasterOfCeremonies{
-		hasNut: true,
+		hasNut:    true,
+		xPosition: 0,
 	}
 	princess := Princess{
 		age:       "young",
@@ -197,32 +240,56 @@ func main() {
 		cheeks:    "like pink lilies",
 		eyes:      "shiny like blue stars",
 		hair:      "cute golden curls",
-		monster:   NewMonster(),
+		monster:   NewMonster(0),
+		hasNut:    false,
+		xPosition: 0,
+	}
+	rat := Rat{
+		hair:          "gray",
+		xPosition:     7,
+		isUnderground: true,
+		isHurting:     false,
 	}
 	folk := Folk{}
 	folk.NewFolk()
 	courtiers := Courtiers{}
 
-	fmt.Println(drosselmeier)
-	fmt.Println(masterOfCeremonies)
-	fmt.Println(nut)
-	fmt.Println(princess.monster)
-
+	// повествование
 	drosselmeier.bow()
-	drosselmeier.takeNut(masterOfCeremonies)
-	fmt.Println(drosselmeier.crackNut(nut))
+	drosselmeier.takeNut(&masterOfCeremonies)
+	fmt.Println(drosselmeier.crackNut(&nut))
 	drosselmeier.kneel()
-	drosselmeier.giveNut(princess)
+	drosselmeier.giveNut(&princess)
 	drosselmeier.eyes = "closed"
-	drosselmeier.backAway(1)
+	fmt.Println(drosselmeier.backAway(1))
 	princess.eatNutKernel()
-	drosselmeier.backAway(1)
-	courtiers.Rejoice()
-	fmt.Println(courtiers.trumpet)
-	for _, person := range folk.CommonPeople {
-		fmt.Println(person.Rejoice())
-	}
-	fmt.Println(courtiers.oboe)
-	drosselmeier.backAway(1)
+	courtiers.rejoice(true)
 
+	for drosselmeier.xPosition < 6 {
+		fmt.Println(makeJoiceSound(&drosselmeier, &courtiers, &folk))
+	}
+
+	rat.isUnderground = false
+	fmt.Println(rat.whistleAndHiss(true))
+	drosselmeier.backAway(1)
+	drosselmeier.stepOnRat(&rat)
+	drosselmeier.monster = NewMonster(minute)
+
+}
+
+func makeJoiceSound(drosselmeier *Drosselmeier, courtiers *Courtiers, folk *Folk) string {
+	rand.Seed(time.Now().UnixNano())
+	n := rand.Intn(4)
+	var sound string
+	switch n {
+	case 0:
+		sound = drosselmeier.backAway(1)
+	case 1:
+		sound = courtiers.trumpet
+	case 2:
+		sound = courtiers.trumpet
+	case 3:
+		sound = folk.CommonPeople[rand.Intn(crowdSize)].rejoice()
+	}
+	return sound
 }
