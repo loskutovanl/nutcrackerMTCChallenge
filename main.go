@@ -15,6 +15,7 @@ const (
 )
 
 // Monster содержит информацию об уроде
+
 type Monster struct {
 	body  string
 	head  string
@@ -116,8 +117,8 @@ type Princess struct {
 	eyes      string
 	hair      string
 	hasNut    bool
-	monster   *Monster
 	xPosition int
+	monster   *Monster
 }
 
 func (p *Princess) eatNutKernel() {
@@ -137,24 +138,24 @@ func (c *Courtiers) jumpOnOneLeg() string {
 	return "jump-jump!"
 }
 
-type RoyalServants struct {
-	Drosselmeier       Drosselmeier
-	MasterOfCeremonies MasterOfCeremonies
-}
-
 type Folk struct {
 	CommonPeople []CommonPerson
+	xPosition    int
 }
 
 func (f *Folk) NewFolk() {
-	commonPerson := CommonPerson{xPosition: 14}
+	commonPerson := CommonPerson{}
 	for i := 0; i < crowdSize; i++ {
 		f.CommonPeople = append(f.CommonPeople, commonPerson)
 	}
+	f.xPosition = 13
+}
+
+func (f *Folk) rushToPrincess(steps int) {
+	f.xPosition -= steps
 }
 
 type CommonPerson struct {
-	xPosition int
 }
 
 func (cp *CommonPerson) rejoice() string {
@@ -293,50 +294,49 @@ func main() {
 	music.on(true)
 
 	var wg sync.WaitGroup
-	for {
-		if drosselmeier.xPosition >= 6 {
-			break
-		}
-
+	stepsLeftByDrosselmeier := 6
+	stepWhenQueenFaints := rand.Intn(stepsLeftByDrosselmeier)
+	for step := 1; step < stepsLeftByDrosselmeier; step++ {
 		go func() {
 			wg.Add(1)
 			defer wg.Done()
-			fmt.Printf(drosselmeier.backAway(1))
+			fmt.Println(drosselmeier.backAway(1))
 		}()
 
 		go func() {
 			wg.Add(1)
 			defer wg.Done()
-			fmt.Printf(music.trumpet)
+			fmt.Println(music.trumpet)
+			fmt.Println(music.oboe)
 		}()
+
 		go func() {
 			wg.Add(1)
 			defer wg.Done()
-			fmt.Printf(music.oboe)
+			fmt.Println(folk.CommonPeople[rand.Intn(crowdSize)].rejoice())
+			folk.rushToPrincess(1)
 		}()
+
 		go func() {
 			wg.Add(1)
 			defer wg.Done()
-			fmt.Printf(folk.CommonPeople[rand.Intn(crowdSize)].rejoice())
+			fmt.Println(king.rejoice())
+			fmt.Println(courtiers.rejoice())
 		}()
-		go func() {
-			wg.Add(1)
-			defer wg.Done()
-			fmt.Printf(king.rejoice())
-			fmt.Printf(courtiers.rejoice())
-		}()
-		if queen.isConscious {
+
+		if step == stepWhenQueenFaints {
 			go func() {
 				wg.Add(1)
 				defer wg.Done()
-				fmt.Printf(queen.rejoice())
-				fmt.Println(queen.isConscious)
+				fmt.Println(queen.rejoice())
 			}()
 		}
 	}
 
 	wg.Wait()
-	fmt.Println(drosselmeier.xPosition, "x position")
+	fmt.Println(drosselmeier.backAway(1))
+	fmt.Println(drosselmeier.xPosition, "x position doss")
+	fmt.Println(folk.xPosition, "x position folk")
 	rat.isUnderground = false
 	fmt.Println(rat.whistleAndHiss(true))
 	drosselmeier.backAway(1)
