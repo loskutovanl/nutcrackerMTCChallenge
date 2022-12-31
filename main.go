@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -62,6 +63,26 @@ type Nut struct {
 	unshelled bool
 }
 
+type Music struct {
+	trumpet string
+	oboe    string
+}
+
+func (m *Music) on(isLoud bool) {
+	var (
+		trumpetSound = "Tarantara! tarantara!"
+		oboeSound    = "Ra, ra, ra, ra!"
+	)
+	if isLoud == true {
+		trumpetSound = strings.ToUpper(trumpetSound)
+		oboeSound = strings.ToUpper(oboeSound)
+	}
+	m.trumpet = trumpetSound
+	m.oboe = oboeSound
+}
+
+// действующие лица
+
 type King struct {
 	xPosition int
 }
@@ -75,7 +96,8 @@ func (k *King) jumpOnOneLeg() string {
 }
 
 type Queen struct {
-	xPosition int
+	xPosition   int
+	isConscious bool
 }
 
 func (q *Queen) rejoice() string {
@@ -83,6 +105,7 @@ func (q *Queen) rejoice() string {
 }
 
 func (q *Queen) faint() string {
+	q.isConscious = false
 	return "thud!"
 }
 
@@ -103,22 +126,15 @@ func (p *Princess) eatNutKernel() {
 }
 
 type Courtiers struct {
-	trumpet   string
-	oboe      string
 	xPosition int
 }
 
-func (c *Courtiers) rejoice(isLoud bool) {
-	var (
-		trumpetSound = "Tarantara! tarantara!"
-		oboeSound    = "Ra, ra, ra, ra!"
-	)
-	if isLoud == true {
-		trumpetSound = strings.ToUpper(trumpetSound)
-		oboeSound = strings.ToUpper(oboeSound)
-	}
-	c.trumpet = trumpetSound
-	c.oboe = oboeSound
+func (c *Courtiers) rejoice() string {
+	return c.jumpOnOneLeg()
+}
+
+func (c *Courtiers) jumpOnOneLeg() string {
+	return "jump-jump!"
 }
 
 type RoyalServants struct {
@@ -220,8 +236,22 @@ func (r *Rat) whistleAndHiss(isLoud bool) (string, string) {
 
 func main() {
 	// объявление действующих лиц и предметов
-	nut := Nut{
-		name: "Krakatuk",
+	king := King{
+		xPosition: 0,
+	}
+	queen := Queen{
+		xPosition:   0,
+		isConscious: true,
+	}
+	princess := Princess{
+		age:       "young",
+		beautiful: true,
+		cheeks:    "like pink lilies",
+		eyes:      "shiny like blue stars",
+		hair:      "cute golden curls",
+		monster:   NewMonster(0),
+		hasNut:    false,
+		xPosition: 0,
 	}
 	drosselmeier := Drosselmeier{
 		age:          "young",
@@ -234,25 +264,22 @@ func main() {
 		hasNut:    true,
 		xPosition: 0,
 	}
-	princess := Princess{
-		age:       "young",
-		beautiful: true,
-		cheeks:    "like pink lilies",
-		eyes:      "shiny like blue stars",
-		hair:      "cute golden curls",
-		monster:   NewMonster(0),
-		hasNut:    false,
-		xPosition: 0,
+	nut := Nut{
+		name: "Krakatuk",
 	}
+	folk := Folk{}
+	folk.NewFolk()
+	music := Music{
+		trumpet: "",
+		oboe:    "",
+	}
+	courtiers := Courtiers{}
 	rat := Rat{
 		hair:          "gray",
 		xPosition:     7,
 		isUnderground: true,
 		isHurting:     false,
 	}
-	folk := Folk{}
-	folk.NewFolk()
-	courtiers := Courtiers{}
 
 	// повествование
 	drosselmeier.bow()
@@ -263,33 +290,56 @@ func main() {
 	drosselmeier.eyes = "closed"
 	fmt.Println(drosselmeier.backAway(1))
 	princess.eatNutKernel()
-	courtiers.rejoice(true)
+	music.on(true)
 
-	for drosselmeier.xPosition < 6 {
-		fmt.Println(makeJoiceSound(&drosselmeier, &courtiers, &folk))
+	var wg sync.WaitGroup
+	for {
+		if drosselmeier.xPosition >= 6 {
+			break
+		}
+
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
+			fmt.Printf(drosselmeier.backAway(1))
+		}()
+
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
+			fmt.Printf(music.trumpet)
+		}()
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
+			fmt.Printf(music.oboe)
+		}()
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
+			fmt.Printf(folk.CommonPeople[rand.Intn(crowdSize)].rejoice())
+		}()
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
+			fmt.Printf(king.rejoice())
+			fmt.Printf(courtiers.rejoice())
+		}()
+		if queen.isConscious {
+			go func() {
+				wg.Add(1)
+				defer wg.Done()
+				fmt.Printf(queen.rejoice())
+				fmt.Println(queen.isConscious)
+			}()
+		}
 	}
 
+	wg.Wait()
+	fmt.Println(drosselmeier.xPosition, "x position")
 	rat.isUnderground = false
 	fmt.Println(rat.whistleAndHiss(true))
 	drosselmeier.backAway(1)
 	drosselmeier.stepOnRat(&rat)
 	drosselmeier.monster = NewMonster(minute)
-
-}
-
-func makeJoiceSound(drosselmeier *Drosselmeier, courtiers *Courtiers, folk *Folk) string {
-	rand.Seed(time.Now().UnixNano())
-	n := rand.Intn(4)
-	var sound string
-	switch n {
-	case 0:
-		sound = drosselmeier.backAway(1)
-	case 1:
-		sound = courtiers.trumpet
-	case 2:
-		sound = courtiers.trumpet
-	case 3:
-		sound = folk.CommonPeople[rand.Intn(crowdSize)].rejoice()
-	}
-	return sound
 }
