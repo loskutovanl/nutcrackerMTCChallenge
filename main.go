@@ -10,7 +10,7 @@ import (
 
 const (
 	second    = time.Second
-	minute    = time.Second
+	minute    = time.Minute
 	crowdSize = 1000
 )
 
@@ -116,13 +116,13 @@ type Princess struct {
 	cheeks    string
 	eyes      string
 	hair      string
-	hasNut    bool
+	nut       *Nut
 	xPosition int
 	monster   *Monster
 }
 
 func (p *Princess) eatNutKernel() {
-	p.hasNut = false
+	p.nut = nil
 	p.monster = nil
 }
 
@@ -148,7 +148,6 @@ func (f *Folk) NewFolk() {
 	for i := 0; i < crowdSize; i++ {
 		f.CommonPeople = append(f.CommonPeople, commonPerson)
 	}
-	f.xPosition = 13
 }
 
 func (f *Folk) rushToPrincess(steps int) {
@@ -167,7 +166,7 @@ type Drosselmeier struct {
 	bodyPosition string
 	eyes         string
 	xPosition    int
-	hasNut       bool
+	nut          *Nut
 	monster      *Monster
 }
 
@@ -197,14 +196,14 @@ func (d *Drosselmeier) backAway(steps int) string {
 	return "click!"
 }
 
-func (d *Drosselmeier) takeNut(m *MasterOfCeremonies) {
-	m.hasNut = false
-	d.hasNut = true
+func (d *Drosselmeier) takeNut(m *MasterOfCeremonies, n *Nut) {
+	m.nut = nil
+	d.nut = n
 }
 
-func (d *Drosselmeier) giveNut(p *Princess) {
-	d.hasNut = false
-	p.hasNut = true
+func (d *Drosselmeier) giveNut(p *Princess, n *Nut) {
+	d.nut = nil
+	p.nut = n
 }
 
 func (d *Drosselmeier) stepOnRat(r *Rat) {
@@ -212,7 +211,7 @@ func (d *Drosselmeier) stepOnRat(r *Rat) {
 }
 
 type MasterOfCeremonies struct {
-	hasNut    bool
+	nut       *Nut
 	xPosition int
 }
 
@@ -236,7 +235,6 @@ func (r *Rat) whistleAndHiss(isLoud bool) (string, string) {
 }
 
 func main() {
-	// объявление действующих лиц и предметов
 	king := King{
 		xPosition: 0,
 	}
@@ -245,53 +243,50 @@ func main() {
 		isConscious: true,
 	}
 	princess := Princess{
-		age:       "young",
-		beautiful: true,
-		cheeks:    "like pink lilies",
-		eyes:      "shiny like blue stars",
-		hair:      "cute golden curls",
 		monster:   NewMonster(0),
-		hasNut:    false,
+		nut:       nil,
 		xPosition: 0,
 	}
+
 	drosselmeier := Drosselmeier{
 		age:          "young",
 		bodyPosition: "stand up",
 		eyes:         "open",
 		xPosition:    0,
-		hasNut:       false,
-	}
-	masterOfCeremonies := MasterOfCeremonies{
-		hasNut:    true,
-		xPosition: 0,
+		nut:          nil,
 	}
 	nut := Nut{
-		name: "Krakatuk",
+		name:      "Krakatuk",
+		unshelled: false,
 	}
-	folk := Folk{}
-	folk.NewFolk()
+	masterOfCeremonies := MasterOfCeremonies{
+		nut:       &nut,
+		xPosition: 0,
+	}
+
+	drosselmeier.bow()
+	drosselmeier.takeNut(&masterOfCeremonies, &nut)
+	fmt.Println(drosselmeier.crackNut(&nut))
+	drosselmeier.kneel()
+	drosselmeier.giveNut(&princess, &nut)
+	drosselmeier.eyes = "closed"
+	fmt.Println(drosselmeier.backAway(1))
+
+	princess.eatNutKernel()
+	princess.beautiful = true
+	princess.age = "young"
+	princess.cheeks = "like pink lilies"
+	princess.eyes = "shiny like blue stars"
+	princess.hair = "cute golden curls"
+
 	music := Music{
 		trumpet: "",
 		oboe:    "",
 	}
-	courtiers := Courtiers{}
-	rat := Rat{
-		hair:          "gray",
-		xPosition:     7,
-		isUnderground: true,
-		isHurting:     false,
-	}
-
-	// повествование
-	drosselmeier.bow()
-	drosselmeier.takeNut(&masterOfCeremonies)
-	fmt.Println(drosselmeier.crackNut(&nut))
-	drosselmeier.kneel()
-	drosselmeier.giveNut(&princess)
-	drosselmeier.eyes = "closed"
-	fmt.Println(drosselmeier.backAway(1))
-	princess.eatNutKernel()
 	music.on(true)
+	folk := Folk{xPosition: 12}
+	folk.NewFolk()
+	courtiers := Courtiers{}
 
 	var wg sync.WaitGroup
 	stepsLeftByDrosselmeier := 6
@@ -314,7 +309,7 @@ func main() {
 			wg.Add(1)
 			defer wg.Done()
 			fmt.Println(folk.CommonPeople[rand.Intn(crowdSize)].rejoice())
-			folk.rushToPrincess(1)
+			folk.rushToPrincess(2)
 		}()
 
 		go func() {
@@ -334,9 +329,14 @@ func main() {
 	}
 
 	wg.Wait()
-	fmt.Println(drosselmeier.backAway(1))
-	fmt.Println(drosselmeier.xPosition, "x position doss")
-	fmt.Println(folk.xPosition, "x position folk")
+
+	rat := Rat{
+		hair:          "gray",
+		xPosition:     7,
+		isUnderground: true,
+		isHurting:     false,
+	}
+
 	rat.isUnderground = false
 	fmt.Println(rat.whistleAndHiss(true))
 	drosselmeier.backAway(1)
