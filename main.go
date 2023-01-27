@@ -14,8 +14,6 @@ const (
 	crowdSize = 1000
 )
 
-// Monster содержит информацию об уроде
-
 type Monster struct {
 	body  string
 	head  string
@@ -52,8 +50,6 @@ func (m *Monster) getCloak() {
 	}
 }
 
-// Предметы неодушевленные
-
 type Cloak struct {
 	weight   string
 	material string
@@ -81,8 +77,6 @@ func (m *Music) on(isLoud bool) {
 	m.trumpet = trumpetSound
 	m.oboe = oboeSound
 }
-
-// действующие лица
 
 type King struct {
 	xPosition int
@@ -292,36 +286,36 @@ func main() {
 	stepsLeftByDrosselmeier := 6
 	stepWhenQueenFaints := rand.Intn(stepsLeftByDrosselmeier)
 	for step := 1; step < stepsLeftByDrosselmeier; step++ {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 			fmt.Println(drosselmeier.backAway(1))
 		}()
 
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 			fmt.Println(music.trumpet)
 			fmt.Println(music.oboe)
 		}()
 
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 			fmt.Println(folk.CommonPeople[rand.Intn(crowdSize)].rejoice())
 			folk.rushToPrincess(2)
 		}()
 
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 			fmt.Println(king.rejoice())
 			fmt.Println(courtiers.rejoice())
 		}()
 
 		if step == stepWhenQueenFaints {
+			wg.Add(1)
 			go func() {
-				wg.Add(1)
 				defer wg.Done()
 				fmt.Println(queen.rejoice())
 			}()
